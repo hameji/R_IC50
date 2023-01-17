@@ -1,0 +1,123 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Preparation
+
+You need to process excel file manually first<br>
+ 1. calculate average blank value<br>
+ 2. subtract blank from all cells
+
+```{r}
+# directory choose
+dir.choose <- function() {
+  system("osascript -e 'tell app \"RStudio\" to POSIX path of (choose folder with prompt \"Choose Folder:\")' > /tmp/R_folder",
+         intern = FALSE, ignore.stderr = TRUE)
+  p <- system("cat /tmp/R_folder && rm -f /tmp/R_folder", intern = TRUE)
+  return(ifelse(length(p), p, NA))
+}
+
+local <- dir.choose()
+setwd(local)
+```
+
+# Read csv file
+
+1. read csv
+2. add column name
+
+```{r}
+inport.file.name = "1108_Gem_Verte.csv"
+data <- read.csv(paste0(local, inport.file.name))
+
+setRowCol<- function(data) {
+  colnames(data) <- c("row", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12")
+  data$row <- factor(data$row)
+  return (data)
+} 
+
+data <- setRowCol(data)
+data
+```
+
+
+# convert wide to long
+
+```{r}
+# install.packages("tidyverse")
+library("tidyverse")
+
+convert.to.long <- function(data) {
+  data.long <- gather(data, key="column", value="OD value", 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)
+  return (data.long)
+}
+
+data.long <- convert.to.long(data)
+data.long
+```
+
+
+# add settings data
+1. drug concentration
+2. drug type
+
+```{r}
+add.data <- function(data) {
+  
+  # set data by row
+  data["conc"] = ""
+  row <- unique(data$row)
+  for (i in 1:length(row)) {
+    if (i == 1) {
+      data[data$row == row[i],"conc"] = "blank" 
+    } else if (i == 2) {
+      data[data$row == row[i],"conc"] = "0uM" 
+    } else if (i == 3) {
+      data[data$row == row[i],"conc"] = "0.01uM" 
+    } else if (i == 4) {
+      data[data$row == row[i],"conc"] = "0.1uM" 
+    } else if (i == 5) {
+      data[data$row == row[i],"conc"] = "1uM" 
+    } else if (i == 6) {
+      data[data$row == row[i],"conc"] = "10uM" 
+    } else if (i == 7) {
+      data[data$row == row[i],"conc"] = "100uM" 
+    } else { ## } if (i == 8) {
+      data[data$row == row[i],"conc"] = "1mM" 
+    }
+  }
+  
+  # set data by column
+  data["drug"] = ""
+  column <- unique(data$column)
+  for (i in 1:length(column)) {
+    if (i <= 6) {
+      data[data$column == i,"drug"] = "Gemcitabin"
+    } else {
+      data[data$column == i,"drug"] = "Verteporfin"
+    }
+  }
+
+  return (data)
+}
+
+data.long <- add.data(data.long)
+```
+
+# Clean data
+1. delete 0 value cells<br>
+2. convert negative values to 0
+
+```{r}
+data.long <- subset(data.long, data.long["OD value"] != 0.0)
+data.long[data.long['OD value'] < 0.0,'OD value'] = 0.0 
+data.long
+```
+
+# write to file
+
+```{r}
+output.file.name <- "1108_gem_verte_raw.csv"
+write_csv(data.long, paste0(local, output.file.name))
+```
