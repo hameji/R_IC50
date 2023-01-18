@@ -1,13 +1,26 @@
 ---
-title: "R Notebook"
+title: "[Pre-proccess]"
 output: html_notebook
 ---
 
-# Preparation
+# Part (1/2)
 
-You need to process excel file manually first<br>
- 1. calculate average blank value<br>
+## Preparation
+
+You need to process excel file manually first
+
+ 1. calculate average blank value
  2. subtract blank from all cells
+ 3. for cells with out condition set value of 0
+ 4. export in a csv format and save in this downloaded folder
+
+ Look into "20230116_MTT_1108_Met_Verte.xlsx" for actual process.<br>
+ Check output csv file content by compairing it with "1108_Gem_Verte.csv"
+
+
+# Set working directory
+
+Normally, you need to just select this downloaded folder directory
 
 ```{r}
 # directory choose
@@ -24,8 +37,8 @@ setwd(local)
 
 # Read csv file
 
-1. read csv
-2. add column name
+1. read the made csv file 
+2. set column name to the loaded dataframe
 
 ```{r}
 inport.file.name = "1108_Gem_Verte.csv"
@@ -44,8 +57,12 @@ data
 
 # convert wide to long
 
+This is to make it easy to group & filter data and apply functions like mean.
+
 ```{r}
-# install.packages("tidyverse")
+if (!require("tidyverse")) {
+  install.packages("tidyverse") # if not installed include this line
+}
 library("tidyverse")
 
 convert.to.long <- function(data) {
@@ -58,7 +75,10 @@ data.long
 ```
 
 
-# add settings data
+# add settings data (adjust to your own environment)
+
+For my data("1108 Gem Verte"), added concentration, drug type.
+
 1. drug concentration
 2. drug type
 
@@ -93,7 +113,7 @@ add.data <- function(data) {
   column <- unique(data$column)
   for (i in 1:length(column)) {
     if (i <= 6) {
-      data[data$column == i,"drug"] = "Gemcitabin"
+      data[data$column == i,"drug"] = "Gemcitabine"
     } else {
       data[data$column == i,"drug"] = "Verteporfin"
     }
@@ -106,8 +126,10 @@ data.long <- add.data(data.long)
 ```
 
 # Clean data
-1. delete 0 value cells<br>
-2. convert negative values to 0
+
+1. delete 0 value cells
+2. convert negative values to 0 
+(negative values(=viability) will be misleading)
 
 ```{r}
 data.long <- subset(data.long, data.long["OD value"] != 0.0)
@@ -117,7 +139,12 @@ data.long
 
 # write to file
 
+change file name to whatever you prefer.
+
 ```{r}
-output.file.name <- "1108_gem_verte_raw.csv"
+output.file.name <- "1108_gem_verte_long.csv"
 write_csv(data.long, paste0(local, output.file.name))
 ```
+
+now you have completed converting wide format to long format.
+Proceed to the next script "writeGraph.Rmd"

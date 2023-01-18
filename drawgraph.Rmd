@@ -3,7 +3,153 @@ title: "R Notebook"
 output: html_notebook
 ---
 
+# Part2 (1/2)
+
+## draw graph from data
+
+If you are starting from this file, it will be safe to set the local path by executing the code below.
 
 ```{r}
+# directory choose
+dir.choose <- function() {
+  system("osascript -e 'tell app \"RStudio\" to POSIX path of (choose folder with prompt \"Choose Folder:\")' > /tmp/R_folder",
+         intern = FALSE, ignore.stderr = TRUE)
+  p <- system("cat /tmp/R_folder && rm -f /tmp/R_folder", intern = TRUE)
+  return(ifelse(length(p), p, NA))
+}
 
+local <- dir.choose()
+setwd(local)
 ```
+
+
+# Read csv file
+
+1. read the csv file you made from part1.
+2. set column name for manipulation.
+
+```{r}
+inport.file.name = "1108_gem_verte_long.csv"
+data <- read.csv(paste0(local, inport.file.name))
+data
+```
+
+# delete row, column columns
+
+It is not mandatory but "row" and "column" columns are not needed so delete.<br>
+Change units(mM to uM) so that it will be compairable. 
+
+
+```{r}
+data[, c('row', 'column')] <- list(NULL) # delete 'row', 'column' columns
+data[data$conc=="1mM","conc"] = "1000uM"
+data
+```
+
+# Transform data for IC50
+
+1. calculate median for each concentration
+2. set control(0uM) value for reference
+3. calculate viability from division of OD value
+4. separate "conc" column to concentration value and unit for plot 
+5. subgroup data by drug type
+
+```{r}
+if (!require("dplyr")) {
+  install.packages("dplyr")
+}
+library(dplyr)
+library(stringr)
+
+# 1.
+summary <- data %>%
+  group_by(drug, conc) %>%
+  summarize_at(vars(OD.value), list(value=mean))
+summary
+
+# 2.
+gemcitabine.control <- summary[summary$drug=="Gemcitabin" & summary$conc=="0uM", "value"]
+verteporfin.control <- summary[summary$drug=="Verteporfin" & summary$conc=="0uM", "value"]
+
+summary["reference"] = 0
+summary[summary$drug=="Gemcitabine", 'reference'] = gemcitabin.control
+summary[summary$drug=="Verteporfin", 'reference'] = verteporfin.control
+
+# 3.
+summary["percent"] = summary["value"] / summary["reference"]
+
+# 4.
+summary <- summary %>%
+  mutate(concentration = str_extract(conc, "^(\\d)(\\.)(\\d)+|^(\\d)+")) %>% # the order is important.
+  mutate(unit = str_extract(conc, "(\\D)+$"))
+summary$concentration = as.double(summary$concentration)
+
+# 5.
+gemcitabine.summary <- summary[summary$drug=="Gemcitabine",]
+verteporfin.summary <- summary[summary$drug=="Verteporfin",]
+
+gemcitabine.summary
+verteporfin.summary
+```
+
+
+# Draw graph
+https://envrisklab.hatenablog.com/entry/2018/02/12/154639
+https://rstudio-pubs-static.s3.amazonaws.com/63117_47264132789f40f690a707ee5429f45a.html
+
+Start from simple scatter plot to see if the plot shape is sigmoid curve
+
+```{r}
+plot(percent~concentration,gemcitabine.summary ,subset=concentration!=0,log="x")
+# use log for x-axis
+plot(percent~concentration,verteporfin.summary ,subset=concentration!=0,log="x")
+```
+
+# Analyze in detail
+
+Lets write sigmoid graph.<br>
+
+can add serveral sigmoid curve by setting add=TRUE
+type: "all", "bars", "none", "obs"
+
+Calculate IC50<br>
+- https://www.researchgate.net/post/How_can_I_calculate_IC50_value_with_Rstudio
+
+```{r}
+if (!require("drc")) {
+  install.packages("drc")
+}
+library(drc)
+
+analyze <- function(title, data, line.color) {
+  model.LL4 <- drm(formula=percent~concentration,
+                   data=data,
+                   fct=LL.4(names=c("hill", "min", "max", "ec_50")))
+  summary(model.LL4)
+  coef(model.LL4)
+  modelFit(model.LL4)
+  plot(model.LL4, main=title, conName="Control", broken = TRUE)
+  abline(h = 0.5, col=line.color,  lty = 3)
+  
+  IC.50 <- ED(model.LL4,
+              respLev=c(50),
+              reference=c("control"),
+              type="relative",
+              bound=TRUE,
+              od=FALSE,
+              vocv. = vcov,
+              display=TRUE,
+              pool=TRUE,
+              logBase=NULL,
+              multiComp=FALSE)
+  ic.50.value <- IC.50[1,1]
+  abline(v = ic.50.value, col = line.color, lty = 3)
+}
+
+analyze("Gemcitabine IC50", gemcitabine.summary, "blue")
+analyze("Verteporfin IC50", verteporfin.summary, "blue")
+```
+
+To export graph, use command line below and type "analyze("Gemcitabine IC50", gemcitabine.summary, "blue")"<br>
+Graph would appear in right bottom window of RStudio.
+
