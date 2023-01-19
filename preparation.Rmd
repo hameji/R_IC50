@@ -41,7 +41,7 @@ setwd(local)
 2. set column name to the loaded dataframe
 
 ```{r}
-inport.file.name = "1108_Gem_Verte.csv"
+inport.file.name = "1108_Gem_Verte_OD_value.csv"
 data <- read.csv(paste0(local, inport.file.name))
 
 setRowCol<- function(data) {
@@ -104,7 +104,7 @@ add.data <- function(data) {
     } else if (i == 7) {
       data[data$row == row[i],"conc"] = "100uM" 
     } else { ## } if (i == 8) {
-      data[data$row == row[i],"conc"] = "1mM" 
+      data[data$row == row[i],"conc"] = "1000uM" 
     }
   }
   
@@ -142,7 +142,7 @@ data.long
 change file name to whatever you prefer.
 
 ```{r}
-output.file.name <- "1108_gem_verte_long.csv"
+output.file.name <- "1108_gem_verte_od_value_long.csv"
 write_csv(data.long, paste0(local, output.file.name))
 ```
 

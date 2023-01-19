@@ -128,7 +128,12 @@ analyze <- function(title, data, line.color) {
   summary(model.LL4)
   coef(model.LL4)
   modelFit(model.LL4)
-  plot(model.LL4, main=title, conName="Control", broken = TRUE)
+  plot(model.LL4,
+       main=title,
+       xlab="Concentration(uM)",
+       ylab="Viability",
+       conName="Control",
+       broken = TRUE)
   abline(h = 0.5, col=line.color,  lty = 3)
   
   IC.50 <- ED(model.LL4,
@@ -144,10 +149,11 @@ analyze <- function(title, data, line.color) {
               multiComp=FALSE)
   ic.50.value <- IC.50[1,1]
   abline(v = ic.50.value, col = line.color, lty = 3)
+  text(0, -1, ic.50.value)
 }
 
-analyze("Gemcitabine IC50", gemcitabine.summary, "blue")
-analyze("Verteporfin IC50", verteporfin.summary, "blue")
+analyze("Gemcitabine IC50 of 1108", gemcitabine.summary, "blue")
+analyze("Verteporfin IC50 0f 1108", verteporfin.summary, "blue")
 ```
 
 To export graph, use command line below and type "analyze("Gemcitabine IC50", gemcitabine.summary, "blue")"<br>
