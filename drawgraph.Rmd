@@ -4,6 +4,9 @@ output: html_notebook
 ---
 
 # Part2 (1/2)
+https://rstudio-pubs-static.s3.amazonaws.com/378543_5b5bda32bf0541a485ccc49efbea680a.html
+https://rstudio-pubs-static.s3.amazonaws.com/63117_47264132789f40f690a707ee5429f45a.html
+
 
 ## draw graph from data
 

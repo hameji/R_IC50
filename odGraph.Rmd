@@ -6,7 +6,11 @@ output: html_notebook
 
 # Part2 (1/2)
 
-## draw graph from data variation
+## draw graph from data variation from OD value
+
+Since Viability is hard to fix as 100% because of 5 replicates,<br>
+drawing a graph from OD value directory will be more accurate.<br>
+
 
 Draw graph from OD value
 
@@ -39,7 +43,13 @@ od.data
 
 # set replicates
 
+filter by "column" value and set integer value to "replicate"
+
 ```{r}
+column.number = c(1,2,3,4,5, 7,8,9,10,11)
+replicate.number = c(1,2,3,4,5, 1,2,3,4,5)
+
+
 od.data[od.data["column"] == 1,"replicate"] = 1
 od.data[od.data["column"] == 2,"replicate"] = 2
 od.data[od.data["column"] == 3,"replicate"] = 3
@@ -58,7 +68,7 @@ od.data
 # delete row, column columns
 
 It is not mandatory but "row" and "column" columns are not needed so delete.<br>
-Change units(mM to uM) so that it will be compairable. 
+Change units(mM to uM) so that it will be compairable.
 
 
 ```{r}
@@ -69,7 +79,7 @@ od.data
 
 # Transform data for IC50
 
-1. separate "conc" column to concentration value and unit for plot 
+1. separate "conc" column to concentration value and unit for plot
 2. subgroup data by drug type
 
 
@@ -162,7 +172,7 @@ analyze <- function(title, data, line.color) {
   plot(OD.value~concentration,data,subset=concentration!=0,log="x", add=TRUE)
 
   abline(h = 0.5, col=line.color,  lty = 3)
-  
+
   IC.50 <- ED(model.LL4,
               respLev=c(50),
               reference=c("control"),
